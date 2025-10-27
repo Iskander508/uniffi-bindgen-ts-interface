@@ -20,11 +20,11 @@ pub fn rust_type_name(typ: &impl AsType, askama_values: &dyn askama::Values) -> 
         Type::Bytes => "::std::vec::Vec<u8>".into(),
         Type::Timestamp => "::std::time::SystemTime".into(),
         Type::Duration => "::std::time::Duration".into(),
-        Type::Enum { name, .. } | Type::Record { name, .. } => name,
-        Type::Object { name, imp, .. } => {
-            format!("::std::sync::Arc<{}>", imp.rust_name_for(&name))
+        Type::Enum { module_path, name, .. } | Type::Record { module_path, name, .. } => format!("{module_path}::{}", name),
+        Type::Object { module_path, name, imp, .. } => {
+            format!("::std::sync::Arc<{module_path}::{}>", imp.rust_name_for(&name))
         }
-        Type::CallbackInterface { name, .. } => format!("Box<dyn {name}>"),
+        Type::CallbackInterface { module_path, name, .. } => format!("Box<dyn {module_path}::{name}>"),
         Type::Optional { inner_type } => {
             format!("::std::option::Option<{}>", rust_type_name(&inner_type, askama_values)?)
         }
@@ -37,7 +37,7 @@ pub fn rust_type_name(typ: &impl AsType, askama_values: &dyn askama::Values) -> 
             rust_type_name(&key_type, askama_values)?,
             rust_type_name(&value_type, askama_values)?,
         ),
-        Type::Custom { name, .. } => name.to_pascal_case(),
+        Type::Custom { module_path, name, .. } => format!("{module_path}::{}", name),
     })
 }
 
