@@ -49,6 +49,10 @@ pub fn rust_var_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.into())
 }
 
+pub fn rust_enum_variant_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
+    Ok(raw_name.into())
+}
+
 pub fn typescript_type_name(typ: &impl AsType, askama_values: &dyn askama::Values) -> Result<String> {
     Ok(match typ.as_type() {
         Type::Int8 => "/*i8*/number".into(),
