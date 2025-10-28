@@ -17,16 +17,41 @@ use {{ci.crate_name()}};
 {%- endif -%}
 {% endmacro %}
 
+{# Perform any pre-setup work that should be done in a non unsafe context before calling the extern C ffi function #}
+{% macro rust_napi_to_ffi_args_initialization(ffi_func) %}
+    {%- for arg in ffi_func.arguments() -%}
+        {%- if matches!(arg.type_().borrow(), FfiType::RustBuffer(_)) -%}
+            let mut rust_buffer_{{ arg.name() | rust_var_name }} = {
+                let slice_u8 = {{ arg.name() | rust_var_name }}.as_ref();
+                let vec_u8 = slice_u8.to_vec();
+                RustBuffer::from_vec(vec_u8)
+            };
+        {% endif %}
+    {%- endfor -%}
+{%- endmacro %}
+
+{# Given a ffi function, render each argument coercing from the uniffi form to the napi form #}
 {% macro rust_napi_to_ffi_arg_list(ffi_func) %}
     {%- for arg in ffi_func.arguments() -%}
         {%- if matches!(arg.type_().borrow(), FfiType::UInt64 | FfiType::Handle) -%}
             {{ arg.name() | rust_var_name }}.get_u64().1
         {%- else if matches!(arg.type_().borrow(), FfiType::Int64) -%}
             {{ arg.name() | rust_var_name }}.get_i64().0
+        {%- else if matches!(arg.type_().borrow(), FfiType::RustBuffer(_)) -%}
+            &mut rust_buffer_{{ arg.name() | rust_var_name }}
         {%- else -%}
             {{ arg.name() | rust_var_name }}
         {%- endif -%}
         {%- if !loop.last %}, {% endif -%}
+    {%- endfor -%}
+{%- endmacro %}
+
+{# Perform any teardown work that should be done in a non unsafe context after calling the extern C ffi function #}
+{% macro rust_napi_to_ffi_args_teardown(ffi_func) %}
+    {%- for arg in ffi_func.arguments() -%}
+        {%- if matches!(arg.type_().borrow(), FfiType::RustBuffer(_)) -%}
+            rust_buffer_{{ arg.name() | rust_var_name }}.destroy();
+        {% endif %}
     {%- endfor -%}
 {%- endmacro %}
 
@@ -116,6 +141,7 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
     {%-     when Some(return_type) %} -> {{ return_type | rust_ffi_type_name }}
     {%-     when None %}
     {%-   endmatch %} {
+        {% call rust_napi_to_ffi_args_initialization(callback) %}
         unsafe {
             {{ci.crate_name()}}_ffi_sys::{{ callback.name() | rust_ffi_callback_name }}({% call rust_napi_to_ffi_arg_list(callback) %}
         {%- if callback.has_rust_call_status_arg() %}
@@ -124,6 +150,7 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
         {%- endif %}
             )
         }
+        {% call rust_napi_to_ffi_args_teardown(callback) %}
     }
 
     {%- when FfiDefinition::Function(func) %}
@@ -149,6 +176,8 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
         let mut uniffi_call_status = RustCallStatus::default();
         {%- endif %}
 
+        {% call rust_napi_to_ffi_args_initialization(func) %}
+
         {% if func.return_type().is_some() %}let return_value = {% endif -%}
         unsafe {
             {{ci.crate_name()}}_ffi_sys::{{ func.name() }}({% call rust_napi_to_ffi_arg_list(func) %}
@@ -157,6 +186,8 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
             {%-   endif -%}&mut uniffi_call_status
             {%- endif %})
         };
+
+        {% call rust_napi_to_ffi_args_teardown(func) %}
 
         {%- if func.has_rust_call_status_arg() %}
         // Encode the uniffi call status value into a Uint8Array so it can be passed back into
