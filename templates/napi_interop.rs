@@ -24,6 +24,14 @@ fn convert_rust_buffer_to_uint8array(rust_buffer_ptr: *mut RustBuffer) -> napi::
     napi::bindgen_prelude::Uint8Array::new(vec_u8)
 }
 
+fn convert_u64_to_bigint(n: u64) -> napi::bindgen_prelude::BigInt {
+    napi::bindgen_prelude::BigInt { sign_bit: false, words: vec![n] }
+}
+
+fn convert_i64_to_bigint(n: i64) -> napi::bindgen_prelude::BigInt {
+    napi::bindgen_prelude::BigInt { sign_bit: n < 0, words: vec![n.unsigned_abs()] }
+}
+
 {# Perform any pre-setup work that should be done in a non unsafe context before calling the extern C ffi function #}
 {% macro rust_napi_to_ffi_args_initialization(ffi_func) %}
     {%- for arg in ffi_func.arguments() -%}
@@ -62,6 +70,20 @@ fn convert_rust_buffer_to_uint8array(rust_buffer_ptr: *mut RustBuffer) -> napi::
     {%- endfor -%}
 {%- endmacro %}
 
+{# Determine the expression that should be returned from a given [napi] tagged function #}
+{% macro rust_napi_to_ffi_return_expression(ffi_func) %}
+    {%- match ffi_func.return_type() %}
+    {%- when Some(FfiType::Int64) -%}
+        convert_i64_to_bigint(return_value)
+    {%- when Some(FfiType::Int64) | Some(FfiType::UInt64) | Some(FfiType::Handle) -%}
+        convert_u64_to_bigint(return_value)
+    {%- when Some(FfiType::RustBuffer(_)) -%}
+        convert_rust_buffer_to_uint8array(return_value)
+    {%- when Some(_) -%}
+        return_value
+    {%- else -%}
+    {%- endmatch %}
+{%- endmacro %}
 
 {#- ========== #}
 {#- Record definitions: #}
@@ -149,6 +171,8 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
     {%-     when None %}
     {%-   endmatch %} {
         {% call rust_napi_to_ffi_args_initialization(callback) %}
+
+        {% if callback.return_type().is_some() %}let return_value = {% endif -%}
         unsafe {
             {{ci.crate_name()}}_ffi_sys::{{ callback.name() | rust_ffi_callback_name }}({% call rust_napi_to_ffi_arg_list(callback) %}
         {%- if callback.has_rust_call_status_arg() %}
@@ -156,8 +180,11 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
         {%   endif %}rust_call_status
         {%- endif %}
             )
-        }
+        };
+
         {% call rust_napi_to_ffi_args_teardown(callback) %}
+
+        {% call rust_napi_to_ffi_return_expression(callback) %}
     }
 
     {%- when FfiDefinition::Function(func) %}
@@ -214,13 +241,11 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
 
         {# space #}
         {%- match (func.has_rust_call_status_arg(), func.return_type()) %}
-        {%- when (true, Some(FfiType::RustBuffer(_))) -%}
-            (encoded_uniffi_call_status, convert_rust_buffer_to_uint8array(return_value))
         {%- when (true, Some(_)) -%}
-            (encoded_uniffi_call_status, return_value)
-        {%- when (_, Some(_)) -%}
-            return_value
-        {%- when (true, _) -%}
+            (encoded_uniffi_call_status, {% call rust_napi_to_ffi_return_expression(func) %})
+        {%- when (false, Some(_)) -%}
+            {% call rust_napi_to_ffi_return_expression(func) %}
+        {%- when (true, None) -%}
             encoded_uniffi_call_status
         {%- else -%}
         {%- endmatch %}
