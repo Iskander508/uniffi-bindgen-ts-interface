@@ -1,4 +1,5 @@
-use uniffi_bindgen::{ComponentInterface, interface::AsType};
+use std::borrow::Borrow;
+use uniffi_bindgen::{ComponentInterface, interface::{AsType, FfiDefinition}};
 use anyhow::{Context, Result};
 use askama::Template;
 

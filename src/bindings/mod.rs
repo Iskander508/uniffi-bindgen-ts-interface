@@ -44,14 +44,17 @@ impl BindingGenerator for NodeBindingGenerator {
         components: &[uniffi_bindgen::Component<Self::Config>],
     ) -> Result<()> {
         for uniffi_bindgen::Component { ci, config, .. } in components {
-            // println!("Component interface: {ci:#?}");
+            println!("Component interface: {ci:#?}");
+            // ci.object_definitions()[0].
 
-            for func_def in ci.function_definitions() {
-                println!("FN DEF: {func_def:#?}");
-                // func_def.ffi_func
-                // func_def.name()
-                // func_def.return_type
-            }
+            // let a = ci.enum_definitions()[0].variants().iter().any(|v| !v.fields().is_empty());
+
+            // for func_def in ci.function_definitions() {
+            //     println!("FN DEF: {func_def:#?}");
+            //     // func_def.ffi_func
+            //     // func_def.docstring().unwrap().split
+            //     // func_def.return_type
+            // }
 
             // if ci.has_async_fns() || ci.has_async_callback_interface_definition() {
             //     unimplemented!("Cpp bindgen does not support async functions!");
@@ -62,7 +65,7 @@ impl BindingGenerator for NodeBindingGenerator {
                 node_ts_file_contents,
             } = generate_node_bindings(&ci)?;
 
-            let napi_interop_file_path = settings.out_dir.join(format!("{}_napi_interop.rs", ci.namespace()));
+            let napi_interop_file_path = settings.out_dir.join("src").join(format!("{}_napi_interop.rs", ci.namespace()));
             fs::write(&napi_interop_file_path, napi_interop_rust_file_contents)?;
 
             let node_ts_file_path = settings.out_dir.join(format!("{}_node.ts", ci.namespace()));

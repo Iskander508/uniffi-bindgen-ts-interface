@@ -1,6 +1,6 @@
 use askama::Result;
-use heck::{ToLowerCamelCase, ToPascalCase};
-use uniffi_bindgen::interface::{Type, AsType};
+use heck::{ToLowerCamelCase, ToPascalCase, ToUpperCamelCase, ToSnakeCase};
+use uniffi_bindgen::interface::{AsType, FfiType, Type};
 
 // ref: https://github.com/mozilla/uniffi-rs/blob/2e7c7bb07bfc7e310722ce43c002b916f20860ff/uniffi_bindgen/src/scaffolding/mod.rs#L26
 pub fn rust_type_name(typ: &impl AsType, askama_values: &dyn askama::Values) -> Result<String> {
@@ -52,6 +52,43 @@ pub fn rust_var_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
 pub fn rust_enum_variant_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.into())
 }
+
+
+pub fn rust_ffi_type_name(ffi_type: &FfiType, askama_values: &dyn askama::Values) -> Result<String> {
+    Ok(match ffi_type {
+        FfiType::Int8 => "::core::ffi::c_char".into(),
+        FfiType::UInt8 => "::core::ffi::c_schar".into(),
+        FfiType::Int16 => "::core::ffi::c_ushort".into(),
+        FfiType::UInt16 => "::core::ffi::c_short".into(),
+        FfiType::Int32 => "::core::ffi::c_int".into(),
+        FfiType::UInt32 => "::core::ffi::c_uint".into(),
+        FfiType::Int64 => "::core::ffi::c_long".into(),
+        FfiType::UInt64 => "::core::ffi::c_ulong".into(),
+        FfiType::Float32 => "::core::ffi::c_float".into(),
+        FfiType::Float64 => "::core::ffi::c_double".into(),
+        // FfiType::RustArcPtr(_) => "void *".into(),
+        FfiType::RustBuffer(_) => "RustBuffer".into(),
+        FfiType::ForeignBytes => "ForeignBytes".into(),
+        FfiType::Callback(nm) => rust_ffi_callback_name(nm, askama_values)?,
+        FfiType::Struct(nm) => rust_ffi_struct_name(nm, askama_values)?,
+        FfiType::Handle => "/*handle*/ u64".into(),
+        FfiType::RustCallStatus => "RustCallStatus".into(),
+        FfiType::MutReference(inner) => format!("*mut {}", rust_ffi_type_name(inner, askama_values)?),
+        FfiType::Reference(inner) => format!("* {}", rust_ffi_type_name(inner, askama_values)?),
+        FfiType::VoidPointer => "*mut ::core::ffi::c_void".into(), // ???
+    })
+}
+
+pub fn rust_ffi_callback_name(nm: &str, _: &dyn askama::Values) -> Result<String> {
+    Ok(format!("uniffi_{}", nm.to_snake_case()))
+}
+
+pub fn rust_ffi_struct_name(nm: &str, _: &dyn askama::Values) -> Result<String> {
+    Ok(format!("Uniffi{}", nm.to_upper_camel_case()))
+}
+
+
+
 
 pub fn typescript_type_name(typ: &impl AsType, askama_values: &dyn askama::Values) -> Result<String> {
     Ok(match typ.as_type() {
