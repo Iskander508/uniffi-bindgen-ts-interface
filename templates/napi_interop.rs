@@ -96,7 +96,7 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
 #}
 
 {#- ========== #}
-{#- Object definitions: #}
+{#- NAPI <-> extern C definitions: #}
 {#- ========== #}
 
 {%- for definition in ci.ffi_definitions() %}
@@ -134,21 +134,56 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
         {%-   if !loop.last %}, {# space #}
         {%-   endif %}
         {%- endfor %}
-        {%- if func.has_rust_call_status_arg() %}
-        {%-   if !func.arguments().is_empty() %}, {# space #}
-        {%   endif %}rust_call_status: RustCallStatus
-        {%- endif %}
     )
-    {%- if let Some(return_type) = func.return_type() -%}
+    {%- match (func.has_rust_call_status_arg(), func.return_type()) %}
+    {%- when (true, Some(return_type)) -%}
+        {# space #} -> (/* RustCallStatus */ ::napi::bindgen_prelude::Uint8Array, {{ return_type.borrow() | rust_ffi_type_name }})
+    {%- when (_, Some(return_type)) -%}
         {# space #} -> {{ return_type.borrow() | rust_ffi_type_name }}
-    {%- endif %} {
+    {%- when (true, _) -%}
+        {# space #} -> /* RustCallStatus */ ::napi::bindgen_prelude::Uint8Array
+    {%- else -%}
+    {%- endmatch -%}
+    {# space #} {
+        {%- if func.has_rust_call_status_arg() %}
+        let mut uniffi_call_status = RustCallStatus::default();
+        {%- endif %}
+
+        {% if func.return_type().is_some() %}let return_value = {% endif -%}
         unsafe {
             {{ci.crate_name()}}_ffi_sys::{{ func.name() }}({% call rust_napi_to_ffi_arg_list(func) %}
             {%- if func.has_rust_call_status_arg() %}
             {%-   if !func.arguments().is_empty() %}, {# space #}
-            {%   endif %}rust_call_status
+            {%-   endif -%}&mut uniffi_call_status
             {%- endif %})
-        }
+        };
+
+        {%- if func.has_rust_call_status_arg() %}
+        // Encode the uniffi call status value into a Uint8Array so it can be passed back into
+        // javascript land over the napi bridge.
+        let mut uniffi_call_status_bytes: Vec<u8> = vec![];
+        uniffi_call_status_bytes.push(match &uniffi_call_status.code {
+            RustCallStatusCode::Success => 0,
+            RustCallStatusCode::Error => 1,
+            RustCallStatusCode::UnexpectedError => 2,
+            RustCallStatusCode::Cancelled => 3,
+        });
+        // FIXME: the into_inner() call may not be safe, read more of the std::mem::ManuallyDrop docs to verify
+        uniffi_call_status_bytes.extend(::std::mem::ManuallyDrop::into_inner(uniffi_call_status.error_buf).destroy_into_vec());
+
+        let encoded_uniffi_call_status = napi::bindgen_prelude::Uint8Array::new(uniffi_call_status_bytes);
+        {%- endif %}
+
+        {# space #}
+        {%- match (func.has_rust_call_status_arg(), func.return_type()) %}
+        {%- when (true, Some(_)) -%}
+            (encoded_uniffi_call_status, return_value)
+        {%- when (_, Some(_)) -%}
+            return_value
+        {%- when (true, _) -%}
+            encoded_uniffi_call_status
+        {%- else -%}
+        {%- endmatch %}
     }
 
     {%- else %}
@@ -162,13 +197,15 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
 {#- ========== #}
 
 mod {{ci.crate_name()}}_ffi_sys {
+    use uniffi::{RustBuffer, RustCallStatus, RustCallStatusCode, UniffiForeignPointerCell};
+
     {%- for definition in ci.ffi_definitions() %}
         {%- match definition %}
         {%- when FfiDefinition::Struct(ffi_struct) %}
         #[repr(C)]
         pub struct {{ffi_struct.name() | rust_ffi_struct_name}} {
             {% for field in ffi_struct.fields() %}
-                {{ field.name() }}: {{ field.type_().borrow() | rust_ffi_type_name }}
+                {{ field.name() }}: {{ field.type_().borrow() | rust_ffi_type_name }}{% if !loop.last %}, {% endif %}
             {% endfor %}
         }
 
@@ -190,7 +227,7 @@ mod {{ci.crate_name()}}_ffi_sys {
         {%-   endfor %}
         )
         {%-   if callback.has_rust_call_status_arg() -%}
-        {%      if callback.arguments().len() > 0 %}, {% endif %}rust_call_status: &mut RustCallStatus
+        {%      if callback.arguments().len() > 0 %}, {% endif %}rust_call_status: &mut uniffi::RustCallStatus
         {%-   endif %}
         {%-   match callback.return_type() %}
         {%-     when Some(return_type) %} -> {{ return_type | rust_ffi_type_name }}
@@ -206,7 +243,7 @@ mod {{ci.crate_name()}}_ffi_sys {
             {%- endfor %}
             {%- if func.has_rust_call_status_arg() %}
             {%-   if !func.arguments().is_empty() %}, {# space #}
-            {%   endif %}uniffi_out_err: RustCallStatus
+            {%   endif %}uniffi_call_status: *mut uniffi::RustCallStatus
             {%- endif %}
         )
         {%- if let Some(return_type) = func.return_type() -%}
