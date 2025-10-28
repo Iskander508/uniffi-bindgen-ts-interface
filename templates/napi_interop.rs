@@ -17,6 +17,13 @@ use {{ci.crate_name()}};
 {%- endif -%}
 {% endmacro %}
 
+fn convert_rust_buffer_to_uint8array(rust_buffer_ptr: *mut RustBuffer) -> napi::bindgen_prelude::Uint8Array {
+    // FIXME: the from_raw() call may not be the right thing to do here, read more in the docs to be sure
+    let rust_buffer = unsafe { Box::from_raw(rust_buffer_ptr) };
+    let vec_u8 = (*rust_buffer).destroy_into_vec();
+    napi::bindgen_prelude::Uint8Array::new(vec_u8)
+}
+
 {# Perform any pre-setup work that should be done in a non unsafe context before calling the extern C ffi function #}
 {% macro rust_napi_to_ffi_args_initialization(ffi_func) %}
     {%- for arg in ffi_func.arguments() -%}
@@ -138,7 +145,7 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
     {%      if callback.arguments().len() > 0 %}, {% endif %}rust_call_status: *mut RustCallStatus
     {%-   endif %}
     {%-   match callback.return_type() %}
-    {%-     when Some(return_type) %} -> {{ return_type | rust_ffi_type_name }}
+    {%-     when Some(return_type) %} -> {{ return_type | rust_ffi_napi_type_name }}
     {%-     when None %}
     {%-   endmatch %} {
         {% call rust_napi_to_ffi_args_initialization(callback) %}
@@ -164,9 +171,9 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
     )
     {%- match (func.has_rust_call_status_arg(), func.return_type()) %}
     {%- when (true, Some(return_type)) -%}
-        {# space #} -> (/* RustCallStatus */ ::napi::bindgen_prelude::Uint8Array, {{ return_type.borrow() | rust_ffi_type_name }})
+        {# space #} -> (/* RustCallStatus */ ::napi::bindgen_prelude::Uint8Array, {{ return_type.borrow() | rust_ffi_napi_type_name }})
     {%- when (_, Some(return_type)) -%}
-        {# space #} -> {{ return_type.borrow() | rust_ffi_type_name }}
+        {# space #} -> {{ return_type.borrow() | rust_ffi_napi_type_name }}
     {%- when (true, _) -%}
         {# space #} -> /* RustCallStatus */ ::napi::bindgen_prelude::Uint8Array
     {%- else -%}
@@ -207,6 +214,8 @@ pub enum {{ enum_def.name() | rust_fn_name }} {
 
         {# space #}
         {%- match (func.has_rust_call_status_arg(), func.return_type()) %}
+        {%- when (true, Some(FfiType::RustBuffer(_))) -%}
+            (encoded_uniffi_call_status, convert_rust_buffer_to_uint8array(return_value))
         {%- when (true, Some(_)) -%}
             (encoded_uniffi_call_status, return_value)
         {%- when (_, Some(_)) -%}
