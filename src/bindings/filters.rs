@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 use askama::Result;
-use heck::{ToLowerCamelCase, ToPascalCase, ToUpperCamelCase};
+use heck::{ToLowerCamelCase, ToPascalCase, ToShoutySnakeCase};
 use uniffi_bindgen::interface::{AsType, Type};
 
 pub fn typescript_type_name(
@@ -51,52 +51,6 @@ pub fn typescript_type_name(
     })
 }
 
-pub fn typescript_ffi_converter_name(
-    typ: &impl AsType,
-    askama_values: &dyn askama::Values,
-) -> Result<String> {
-    Ok(match typ.as_type() {
-        Type::Int8 => "FfiConverterInt8".into(),
-        Type::Int16 => "FfiConverterInt16".into(),
-        Type::Int32 => "FfiConverterInt32".into(),
-        Type::Int64 => "FfiConverterInt64".into(),
-        Type::UInt8 => "FfiConverterUInt8".into(),
-        Type::UInt16 => "FfiConverterUInt16".into(),
-        Type::UInt32 => "FfiConverterUInt32".into(),
-        Type::UInt64 => "FfiConverterUInt64".into(),
-        Type::Float32 => "FfiConverterFloat32".into(),
-        Type::Float64 => "FfiConverterFloat64".into(),
-        Type::Boolean => "FfiConverterBool".into(),
-        Type::String => "FfiConverterString".into(),
-        Type::Bytes => "FfiConverterBytes".into(),
-        Type::Timestamp => "FfiConverterTimestamp".into(),
-        Type::Duration => "FfiConverterDuration".into(),
-        Type::Enum { name, .. } | Type::Record { name, .. } | Type::Object { name, .. } => {
-            typescript_ffi_converter_struct_enum_object_name(&name, askama_values)?
-        }
-        Type::CallbackInterface { name, .. } => name.to_lower_camel_case(),
-        Type::Optional { inner_type } => {
-            format!(
-                "(new FfiConverterOptional({}))",
-                typescript_ffi_converter_name(&inner_type, askama_values)?
-            )
-        }
-        Type::Sequence { inner_type } => format!(
-            "(new FfiConverterArray({}))",
-            typescript_ffi_converter_name(&inner_type, askama_values)?
-        ),
-        Type::Map {
-            key_type,
-            value_type,
-        } => format!(
-            "(new FfiConverterMap({}, {}))",
-            typescript_ffi_converter_name(&key_type, askama_values)?,
-            typescript_ffi_converter_name(&value_type, askama_values)?,
-        ),
-        Type::Custom { name, .. } => format!("/* custom? */ {}", name.to_pascal_case()), // FIXME: what should this be?
-    })
-}
-
 pub fn typescript_fn_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.to_lower_camel_case())
 }
@@ -105,22 +59,20 @@ pub fn typescript_var_name(raw_name: &str, _: &dyn askama::Values) -> Result<Str
     Ok(raw_name.to_lower_camel_case())
 }
 
+pub fn typescript_enum_variant_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
+    Ok(raw_name.to_shouty_snake_case())
+}
+
 pub fn typescript_class_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.to_pascal_case())
 }
 
-pub fn typescript_ffi_converter_struct_enum_object_name(
-    struct_name: &str,
-    _: &dyn askama::Values,
-) -> Result<String> {
-    Ok(format!(
-        "FfiConverterType{}",
-        struct_name.to_upper_camel_case()
-    ))
-}
-
 pub fn typescript_docstring(s: &str, _: &dyn askama::Values, level: &i32) -> Result<String> {
-    let contents = textwrap::indent(&textwrap::dedent(s), " * ");
-    let comment = format!("/**\n{contents}\n */");
+    let comment = if s.contains('\n') {
+        let contents = textwrap::indent(&textwrap::dedent(s), " * ");
+        format!("/**\n{contents}\n */")
+    } else {
+        format!("/** {s} */")
+    };
     Ok(textwrap::indent(&comment, &" ".repeat(*level as usize)))
 }

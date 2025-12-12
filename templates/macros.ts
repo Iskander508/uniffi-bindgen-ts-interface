@@ -7,11 +7,9 @@
 {%- endmacro %}
 
 {%- macro docstring(defn, indent_level) %}
-{%- match defn.docstring() %}
-{%- when Some(s) %}
+{%- if let Some(s) = defn.docstring() %}
 {{ s | typescript_docstring(indent_level) }}
-{%- else %}
-{%- endmatch %}
+{%- endif %}
 {%- endmacro %}
 
 {%- macro function_return_type(func_def) -%}
@@ -22,4 +20,18 @@
             void
         {%- endif %}
     {%- if func_def.is_async() -%}>{%- endif -%}
+{%- endmacro -%}
+
+{%- macro struct_field(field_def, indent_level) %}
+{%- call docstring(field_def, indent_level) %}
+{% call indent(indent_level) -%}
+{%- if let Type::Optional{ inner_type } = field_def.as_type() -%}
+    {{field_def.name() | typescript_var_name}}?: {{inner_type | typescript_type_name}};
+{%- else -%}
+    {{field_def.name() | typescript_var_name}}: {{field_def | typescript_type_name}};
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro indent(indent_level) -%}
+    {%- for _ in 0..indent_level %} {% endfor -%}
 {%- endmacro -%}

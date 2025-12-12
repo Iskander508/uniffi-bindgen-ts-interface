@@ -4,8 +4,10 @@
 
 use anyhow::{Context, Result};
 use askama::Template;
-use std::borrow::Borrow;
-use uniffi_bindgen::{ComponentInterface, interface::AsType};
+use uniffi_bindgen::{
+    ComponentInterface,
+    interface::{AsType, Type},
+};
 
 use crate::bindings::filters;
 
