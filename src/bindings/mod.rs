@@ -17,19 +17,16 @@ use crate::{
 };
 
 pub struct NodeBindingGenerator {
-    out_dirname_api: utils::DirnameApi,
     out_disable_auto_loading_lib: bool,
     out_import_extension: utils::ImportExtension,
 }
 
 impl NodeBindingGenerator {
     pub fn new(
-        out_dirname_api: utils::DirnameApi,
         out_disable_auto_loading_lib: bool,
         out_import_extension: utils::ImportExtension,
     ) -> Self {
         Self {
-            out_dirname_api,
             out_disable_auto_loading_lib,
             out_import_extension,
         }
@@ -58,7 +55,7 @@ impl BindingGenerator for NodeBindingGenerator {
         _settings: &GenerationSettings,
         _components: &mut Vec<uniffi_bindgen::Component<Self::Config>>,
     ) -> Result<()> {
-        return Ok(());
+        Ok(())
     }
 
     fn write_bindings(
@@ -71,14 +68,12 @@ impl BindingGenerator for NodeBindingGenerator {
             let node_ts_main_file_name = format!("{}-node", ci.namespace().to_kebab_case());
 
             let Bindings {
-                sys_ts_template_contents,
                 node_ts_file_contents,
                 index_ts_file_contents,
             } = generate_node_bindings(
-                &ci,
+                ci,
                 sys_ts_main_file_name.as_str(),
                 node_ts_main_file_name.as_str(),
-                self.out_dirname_api.clone(),
                 self.out_disable_auto_loading_lib,
                 self.out_import_extension.clone(),
             )?;
@@ -87,9 +82,6 @@ impl BindingGenerator for NodeBindingGenerator {
                 .out_dir
                 .join(format!("{node_ts_main_file_name}.ts"));
             write_with_dirs(&node_ts_file_path, node_ts_file_contents)?;
-
-            let sys_template_path = settings.out_dir.join(format!("{sys_ts_main_file_name}.ts"));
-            write_with_dirs(&sys_template_path, sys_ts_template_contents)?;
 
             let index_template_path = settings.out_dir.join("index.ts");
             write_with_dirs(&index_template_path, index_ts_file_contents)?;

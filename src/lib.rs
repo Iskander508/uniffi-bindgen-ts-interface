@@ -10,22 +10,6 @@ mod bindings;
 mod utils;
 
 #[derive(Debug, Clone, Default, clap::ValueEnum)]
-enum OutputDirnameApi {
-    #[default]
-    Dirname,
-    ImportMetaUrl,
-}
-
-impl Into<bindings::utils::DirnameApi> for OutputDirnameApi {
-    fn into(self) -> bindings::utils::DirnameApi {
-        match self {
-            OutputDirnameApi::ImportMetaUrl => bindings::utils::DirnameApi::ImportMetaUrl,
-            OutputDirnameApi::Dirname => bindings::utils::DirnameApi::Dirname,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Default, clap::ValueEnum)]
 enum OutputImportExtension {
     #[default]
     None,
@@ -58,11 +42,6 @@ pub struct Args {
     #[arg(long)]
     crate_name: String,
 
-    /// The set of buildin apis which should be used to get the current
-    /// directory - `__dirname` or `import.meta.url`.
-    #[arg(long, value_enum, default_value_t=OutputDirnameApi::default())]
-    out_dirname_api: OutputDirnameApi,
-
     /// If specified, the dylib/so/dll native dependency won't be automatically loaded
     /// when the bindgen is imported. If this flag is set, explicit `uniffiLoad` / `uniffiUnload`
     /// will be exported from the generated package which must be called before any uniffi calls
@@ -92,7 +71,6 @@ pub fn run(args: Args) -> Result<()> {
         CrateConfigSupplier::from(metadata)
     };
     let node_binding_generator = bindings::NodeBindingGenerator::new(
-        args.out_dirname_api.into(),
         args.out_disable_auto_load_lib,
         args.out_import_extension.into(),
     );

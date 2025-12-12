@@ -3,15 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum DirnameApi {
-    Dirname,
-    ImportMetaUrl,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ImportExtension {
+pub(crate) enum ImportExtension {
     None,
     Ts,
     Js,
 }
-

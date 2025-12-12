@@ -7,41 +7,14 @@ use askama::Template;
 use std::borrow::Borrow;
 use uniffi_bindgen::{
     ComponentInterface,
-    interface::{AsType, Callable, FfiDefinition, FfiType, Type},
+    interface::{AsType, Callable, FfiDefinition, Type},
 };
 
-use crate::bindings::{
-    filters,
-    utils::{DirnameApi, ImportExtension},
-};
+use crate::bindings::{filters, utils::ImportExtension};
 
 pub struct Bindings {
-    pub sys_ts_template_contents: String,
     pub node_ts_file_contents: String,
     pub index_ts_file_contents: String,
-}
-
-#[derive(Template)]
-#[template(escape = "none", path = "sys.ts")]
-struct SysTemplate<'ci> {
-    ci: &'ci ComponentInterface,
-
-    out_dirname_api: DirnameApi,
-    out_disable_auto_loading_lib: bool,
-}
-
-impl<'ci> SysTemplate<'ci> {
-    pub fn new(
-        ci: &'ci ComponentInterface,
-        out_dirname_api: DirnameApi,
-        out_disable_auto_loading_lib: bool,
-    ) -> Self {
-        Self {
-            ci,
-            out_dirname_api,
-            out_disable_auto_loading_lib,
-        }
-    }
 }
 
 #[derive(Template)]
@@ -95,13 +68,9 @@ pub fn generate_node_bindings(
     ci: &ComponentInterface,
     sys_ts_main_file_name: &str,
     node_ts_main_file_name: &str,
-    out_dirname_api: DirnameApi,
     out_disable_auto_loading_lib: bool,
     out_import_extension: ImportExtension,
 ) -> Result<Bindings> {
-    let sys_template_contents = SysTemplate::new(ci, out_dirname_api, out_disable_auto_loading_lib)
-        .render()
-        .context("failed to render sys.ts template")?;
     let node_ts_file_contents =
         NodeTsTemplate::new(ci, sys_ts_main_file_name, out_import_extension.clone())
             .render()
@@ -116,7 +85,6 @@ pub fn generate_node_bindings(
     .context("failed to render index.ts template")?;
 
     Ok(Bindings {
-        sys_ts_template_contents: sys_template_contents,
         node_ts_file_contents,
         index_ts_file_contents,
     })
