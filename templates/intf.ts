@@ -1,4 +1,4 @@
-{%- import "macros.ts" as ts %}
+{%- import "macros.ts" as ts -%}
 
 // ==========
 // Record definitions:

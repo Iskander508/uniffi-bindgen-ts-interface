@@ -23,7 +23,7 @@ pub fn typescript_type_name(
         Type::Float64 => "number /*f64*/".into(), // FIXME: is this right for f64? I am not sure `number` is big enough?
         Type::Boolean => "boolean".into(),
         Type::String => "string".into(),
-        Type::Bytes => "ArrayBuffer".into(),
+        Type::Bytes => "number[] /*bytearray*/".into(),
         Type::Timestamp => "Date".into(),
         Type::Duration => "number /* in milliseconds */".into(), // ref: https://github.com/jhugman/uniffi-bindgen-react-native/blob/b9301797ef697331d29edb9d2402ea35c218571e/crates/ubrn_bindgen/src/bindings/gen_typescript/miscellany.rs#L31
         Type::Enum { name, .. } | Type::Record { name, .. } => name.to_pascal_case(),

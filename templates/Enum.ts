@@ -17,8 +17,7 @@
 export enum {{ enum_def.name() | typescript_class_name }} {
   {%- for variant in enum_def.variants() %}
   {%- let variant_name = variant.name() | typescript_enum_variant_name %}
-  {{ variant_name }} = "{{ variant_name }}"
-  {%- if !loop.last %}, {% endif -%}
+  {{ variant_name }} = "{{ variant_name }}",
   {%- endfor %}
 }
 {%- endmacro %}
@@ -29,8 +28,8 @@ export type {{ enum_def.name() | typescript_class_name }} =
   {%- let variant_name = variant.name() | typescript_enum_variant_name %}
   {%- call ts::docstring(variant, 4) %}
   | {
-      type_: "{{ variant_name }}"
-      {%- if !variant.fields().is_empty() %};
+      type_: "{{ variant_name }}";
+      {%- if !variant.fields().is_empty() %}
       {%- if variant.has_nameless_fields() %}
       value: {% call variant_nameless_fields(variant) %}
       {%- else %}
@@ -38,7 +37,7 @@ export type {{ enum_def.name() | typescript_class_name }} =
       {%- endif %}
       {%- endif %}
     }
-  {%- endfor %}
+  {%- endfor %};
 {%- endmacro %}
 
 {%~ call ts::docstring(enum_def, 0) %}
