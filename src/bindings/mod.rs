@@ -2,22 +2,24 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-use heck::ToKebabCase;
-use uniffi_bindgen::{BindingGenerator, GenerationSettings};
 use anyhow::Result;
+use heck::ToKebabCase;
 use serde::Deserialize;
+use uniffi_bindgen::{BindingGenerator, GenerationSettings};
 
-mod generator;
 mod filters;
+mod generator;
 pub mod utils;
 
-use crate::{bindings::generator::{generate_node_bindings, Bindings}, utils::write_with_dirs};
+use crate::{
+    bindings::generator::{Bindings, generate_node_bindings},
+    utils::write_with_dirs,
+};
 
 pub struct NodeBindingGenerator {
     out_dirname_api: utils::DirnameApi,
     out_disable_auto_loading_lib: bool,
     out_import_extension: utils::ImportExtension,
-    out_node_version: String,
 }
 
 impl NodeBindingGenerator {
@@ -25,13 +27,11 @@ impl NodeBindingGenerator {
         out_dirname_api: utils::DirnameApi,
         out_disable_auto_loading_lib: bool,
         out_import_extension: utils::ImportExtension,
-        out_node_version: &str,
     ) -> Self {
         Self {
             out_dirname_api,
             out_disable_auto_loading_lib,
             out_import_extension,
-            out_node_version: out_node_version.into(),
         }
     }
 }
@@ -45,10 +45,12 @@ impl BindingGenerator for NodeBindingGenerator {
     type Config = NodeBindingGeneratorConfig;
 
     fn new_config(&self, root_toml: &toml::Value) -> Result<Self::Config> {
-        Ok(match root_toml.get("bindings").and_then(|b| b.get("node")) {
-            Some(v) => v.clone().try_into()?,
-            None => Default::default(),
-        })
+        Ok(
+            match root_toml.get("bindings").and_then(|b| b.get("node")) {
+                Some(v) => v.clone().try_into()?,
+                None => Default::default(),
+            },
+        )
     }
 
     fn update_component_configs(
@@ -69,7 +71,6 @@ impl BindingGenerator for NodeBindingGenerator {
             let node_ts_main_file_name = format!("{}-node", ci.namespace().to_kebab_case());
 
             let Bindings {
-                package_json_contents,
                 sys_ts_template_contents,
                 node_ts_file_contents,
                 index_ts_file_contents,
@@ -80,13 +81,11 @@ impl BindingGenerator for NodeBindingGenerator {
                 self.out_dirname_api.clone(),
                 self.out_disable_auto_loading_lib,
                 self.out_import_extension.clone(),
-                self.out_node_version.as_str(),
             )?;
 
-            let package_json_path = settings.out_dir.join("package.json");
-            write_with_dirs(&package_json_path, package_json_contents)?;
-
-            let node_ts_file_path = settings.out_dir.join(format!("{node_ts_main_file_name}.ts"));
+            let node_ts_file_path = settings
+                .out_dir
+                .join(format!("{node_ts_main_file_name}.ts"));
             write_with_dirs(&node_ts_file_path, node_ts_file_contents)?;
 
             let sys_template_path = settings.out_dir.join(format!("{sys_ts_main_file_name}.ts"));
