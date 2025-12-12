@@ -179,14 +179,6 @@ pub fn typescript_protocol_name(raw_name: &str, values: &dyn askama::Values) -> 
     ))
 }
 
-pub fn typescript_ffi_struct_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
-    Ok(format!("Uniffi{}", raw_name.to_upper_camel_case()))
-}
-
-pub fn typescript_callback_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
-    Ok(format!("UniffiCallback{}", raw_name.to_upper_camel_case()))
-}
-
 pub fn typescript_ffi_converter_struct_enum_object_name(
     struct_name: &str,
     _: &dyn askama::Values,

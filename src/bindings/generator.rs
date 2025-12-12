@@ -7,48 +7,31 @@ use askama::Template;
 use std::borrow::Borrow;
 use uniffi_bindgen::{
     ComponentInterface,
-    interface::{AsType, Callable, FfiDefinition, Type},
+    interface::{AsType, Callable, Type},
 };
 
-use crate::bindings::{filters, utils::ImportExtension};
+use crate::bindings::filters;
 
 pub struct Bindings {
-    pub node_ts_file_contents: String,
+    pub ts_file_contents: String,
 }
 
 #[derive(Template)]
-#[template(escape = "none", path = "node.ts")]
-struct NodeTsTemplate<'ci> {
+#[template(escape = "none", path = "intf.ts")]
+struct IntfTsTemplate<'ci> {
     ci: &'ci ComponentInterface,
-    sys_ts_main_file_name: String,
-    out_import_extension: ImportExtension,
 }
 
-impl<'ci> NodeTsTemplate<'ci> {
-    pub fn new(
-        ci: &'ci ComponentInterface,
-        sys_ts_main_file_name: &str,
-        out_import_extension: ImportExtension,
-    ) -> Self {
-        Self {
-            ci,
-            sys_ts_main_file_name: sys_ts_main_file_name.to_string(),
-            out_import_extension,
-        }
+impl<'ci> IntfTsTemplate<'ci> {
+    pub fn new(ci: &'ci ComponentInterface) -> Self {
+        Self { ci }
     }
 }
 
-pub fn generate_node_bindings(
-    ci: &ComponentInterface,
-    sys_ts_main_file_name: &str,
-    out_import_extension: ImportExtension,
-) -> Result<Bindings> {
-    let node_ts_file_contents =
-        NodeTsTemplate::new(ci, sys_ts_main_file_name, out_import_extension.clone())
-            .render()
-            .context("failed to render node.ts template")?;
+pub fn generate_ts_bindings(ci: &ComponentInterface) -> Result<Bindings> {
+    let ts_file_contents = IntfTsTemplate::new(ci)
+        .render()
+        .context("failed to render intf.ts template")?;
 
-    Ok(Bindings {
-        node_ts_file_contents,
-    })
+    Ok(Bindings { ts_file_contents })
 }
