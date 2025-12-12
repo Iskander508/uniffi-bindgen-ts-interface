@@ -14,13 +14,13 @@ pub fn typescript_type_name(
         Type::Int8 => "number /*i8*/".into(),
         Type::Int16 => "number /*i16*/".into(),
         Type::Int32 => "number /*i32*/".into(),
-        Type::Int64 => "bigint /*i64*/".into(),
+        Type::Int64 => "number /*i64*/".into(), // possible overflow
         Type::UInt8 => "number /*u8*/".into(),
         Type::UInt16 => "number /*u16*/".into(),
         Type::UInt32 => "number /*u32*/".into(),
-        Type::UInt64 => "bigint /*u64*/".into(),
+        Type::UInt64 => "number /*u64*/".into(), // possible overflow
         Type::Float32 => "number /*f32*/".into(),
-        Type::Float64 => "number /*f64*/".into(), // FIXME: is this right for f64? I am not sure `number` is big enough?
+        Type::Float64 => "number /*f64*/".into(), // possible overflow
         Type::Boolean => "boolean".into(),
         Type::String => "string".into(),
         Type::Bytes => "number[] /*bytearray*/".into(),
