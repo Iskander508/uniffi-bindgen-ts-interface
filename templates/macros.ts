@@ -13,3 +13,13 @@
 {%- else %}
 {%- endmatch %}
 {%- endmacro %}
+
+{%- macro function_return_type(func_def) -%}
+    {%- if func_def.is_async() -%}Promise<{%- endif -%}
+        {%- if let Some(ret_type) = func_def.return_type() -%}
+            {{ ret_type | typescript_type_name }}
+        {%- else -%}
+            void
+        {%- endif %}
+    {%- if func_def.is_async() -%}>{%- endif -%}
+{%- endmacro -%}
