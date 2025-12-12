@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 
-# A script for exercising the node bindgen in local development. Use this to exercise it against
+# A script for exercising the bindgen in local development. Use this to exercise it against
 # arbitary dylibs for testing edge cases, working on new bindgen features, etc.
 # Example usage: ./test_bindgen.sh path/to/libexample.dylib path/to/test-script.ts
 
@@ -33,5 +33,5 @@ dylib_path_extension="${DYLIB_PATH##*.}"
 cp "${DYLIB_PATH}" "${OUTPUT_DIR}/lib${CRATE_NAME}.${dylib_path_extension}"
 
 # Note: in the below script, get access to the bindgen exports like this:
-# import { /* ... */ } from './mycoolcrate-node';
+# import { /* ... */ } from './mycoolcrate';
 npx tsx "${TEST_SCRIPT}"

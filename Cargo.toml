@@ -1,5 +1,5 @@
 [package]
-name = "uniffi-bindgen-node"
+name = "uniffi-bindgen-ts-interface"
 version = "0.1.0"
 edition = "2024"
 

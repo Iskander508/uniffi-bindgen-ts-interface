@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use uniffi_bindgen_node::{Args, run};
+use uniffi_bindgen_ts_interface::{Args, run};
 
 fn main() -> Result<()> {
     let args = Args::parse();

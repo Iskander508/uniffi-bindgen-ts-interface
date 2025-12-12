@@ -114,18 +114,5 @@ pub fn run(args: Args) -> Result<()> {
     )
     .context("Failed to generate node bindings in library mode")?;
 
-    // To read from udl file, do something like the below instead:
-    // uniffi_bindgen::generate_external_bindings(
-    //     &CppBindingGenerator {
-    //         scaffolding_mode: args.scaffolding_mode,
-    //     },
-    //     args.source,
-    //     args.config.as_deref(),
-    //     args.out_dir,
-    //     args.lib_file,
-    //     args.crate_name.as_deref(),
-    //     false,
-    // )
-
     Ok(())
 }
