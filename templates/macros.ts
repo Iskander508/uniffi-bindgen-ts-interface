@@ -4,10 +4,6 @@
 	    {{ arg.name() | typescript_var_name }}: {{ arg | typescript_type_name }}
 		{%- if !loop.last %}, {% endif -%}
 	{%- endfor -%}
-  {%- if func.is_async() -%}
-    {%- if !func.arguments().is_empty() %}, {% endif -%}
-    asyncOpts_?: { signal: AbortSignal }
-  {%- endif -%}
 {%- endmacro %}
 
 {%- macro docstring(defn, indent_level) %}

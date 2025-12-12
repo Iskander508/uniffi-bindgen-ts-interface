@@ -11,16 +11,16 @@ pub fn typescript_type_name(
     askama_values: &dyn askama::Values,
 ) -> Result<String> {
     Ok(match typ.as_type() {
-        Type::Int8 => "/*i8*/number".into(),
-        Type::Int16 => "/*i16*/number".into(),
-        Type::Int32 => "/*i32*/number".into(),
-        Type::Int64 => "/*i64*/bigint".into(),
-        Type::UInt8 => "/*u8*/number".into(),
-        Type::UInt16 => "/*u16*/number".into(),
-        Type::UInt32 => "/*u32*/number".into(),
-        Type::UInt64 => "/*u64*/bigint".into(),
-        Type::Float32 => "/*f32*/number".into(),
-        Type::Float64 => "/*f64*/number".into(), // FIXME: is this right for f64? I am not sure `number` is big enough?
+        Type::Int8 => "number /*i8*/".into(),
+        Type::Int16 => "number /*i16*/".into(),
+        Type::Int32 => "number /*i32*/".into(),
+        Type::Int64 => "bigint /*i64*/".into(),
+        Type::UInt8 => "number /*u8*/".into(),
+        Type::UInt16 => "number /*u16*/".into(),
+        Type::UInt32 => "number /*u32*/".into(),
+        Type::UInt64 => "bigint /*u64*/".into(),
+        Type::Float32 => "number /*f32*/".into(),
+        Type::Float64 => "number /*f64*/".into(), // FIXME: is this right for f64? I am not sure `number` is big enough?
         Type::Boolean => "boolean".into(),
         Type::String => "string".into(),
         Type::Bytes => "ArrayBuffer".into(),
@@ -97,64 +97,6 @@ pub fn typescript_ffi_converter_name(
     })
 }
 
-pub fn typescript_ffi_converter_lift_with(
-    target: String,
-    askama_values: &dyn askama::Values,
-    typ: &impl AsType,
-) -> Result<String> {
-    Ok(match typ.as_type() {
-        Type::String
-        | Type::Map { .. }
-        | Type::Sequence { .. }
-        | Type::Enum { .. }
-        | Type::Record { .. } => {
-            format!(
-                "{}.lift(new UniffiRustBufferValue({target}).consumeIntoUint8Array())",
-                typescript_ffi_converter_name(typ, askama_values)?
-            )
-        }
-        Type::Optional { inner_type } => {
-            format!(
-                "new FfiConverterOptional({}).lift(new UniffiRustBufferValue({target}).consumeIntoUint8Array())",
-                typescript_ffi_converter_name(&inner_type, askama_values)?
-            )
-        }
-        _ => format!(
-            "{}.lift({target})",
-            typescript_ffi_converter_name(typ, askama_values)?
-        ),
-    })
-}
-
-pub fn typescript_ffi_converter_lower_with(
-    target: String,
-    askama_values: &dyn askama::Values,
-    typ: &impl AsType,
-) -> Result<String> {
-    Ok(match typ.as_type() {
-        Type::String
-        | Type::Map { .. }
-        | Type::Sequence { .. }
-        | Type::Enum { .. }
-        | Type::Record { .. } => {
-            format!(
-                "UniffiRustBufferValue.allocateWithBytes({}.lower({target})).toStruct()",
-                typescript_ffi_converter_name(typ, askama_values)?
-            )
-        }
-        Type::Optional { inner_type } => {
-            format!(
-                "UniffiRustBufferValue.allocateWithBytes(new FfiConverterOptional({}).lower({target})).toStruct()",
-                typescript_ffi_converter_name(&inner_type, askama_values)?
-            )
-        }
-        _ => format!(
-            "{}.lower({target})",
-            typescript_ffi_converter_name(typ, askama_values)?
-        ),
-    })
-}
-
 pub fn typescript_fn_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.to_lower_camel_case())
 }
@@ -163,20 +105,8 @@ pub fn typescript_var_name(raw_name: &str, _: &dyn askama::Values) -> Result<Str
     Ok(raw_name.to_lower_camel_case())
 }
 
-/// The name of a given argument to a extern c ffi function call
-pub fn typescript_argument_var_name(raw_name: &str, values: &dyn askama::Values) -> Result<String> {
-    Ok(format!("{}Arg", typescript_var_name(raw_name, values)?))
-}
-
 pub fn typescript_class_name(raw_name: &str, _: &dyn askama::Values) -> Result<String> {
     Ok(raw_name.to_pascal_case())
-}
-
-pub fn typescript_protocol_name(raw_name: &str, values: &dyn askama::Values) -> Result<String> {
-    Ok(format!(
-        "{}Interface",
-        typescript_class_name(raw_name, values)?
-    ))
 }
 
 pub fn typescript_ffi_converter_struct_enum_object_name(
@@ -186,16 +116,6 @@ pub fn typescript_ffi_converter_struct_enum_object_name(
     Ok(format!(
         "FfiConverterType{}",
         struct_name.to_upper_camel_case()
-    ))
-}
-
-pub fn typescript_ffi_object_factory_name(
-    object_name: &str,
-    values: &dyn askama::Values,
-) -> Result<String> {
-    Ok(format!(
-        "uniffiType{}ObjectFactory",
-        typescript_class_name(object_name, values)?
     ))
 }
 
