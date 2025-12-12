@@ -43,7 +43,7 @@ pub fn typescript_type_name(
             key_type,
             value_type,
         } => format!(
-            "Map<{}, {}>",
+            "Record<{}, {}>",
             typescript_type_name(&key_type, askama_values)?,
             typescript_type_name(&value_type, askama_values)?,
         ),
