@@ -17,17 +17,12 @@ use crate::{
 };
 
 pub struct NodeBindingGenerator {
-    out_disable_auto_loading_lib: bool,
     out_import_extension: utils::ImportExtension,
 }
 
 impl NodeBindingGenerator {
-    pub fn new(
-        out_disable_auto_loading_lib: bool,
-        out_import_extension: utils::ImportExtension,
-    ) -> Self {
+    pub fn new(out_import_extension: utils::ImportExtension) -> Self {
         Self {
-            out_disable_auto_loading_lib,
             out_import_extension,
         }
     }
@@ -69,12 +64,9 @@ impl BindingGenerator for NodeBindingGenerator {
 
             let Bindings {
                 node_ts_file_contents,
-                index_ts_file_contents,
             } = generate_node_bindings(
                 ci,
                 sys_ts_main_file_name.as_str(),
-                node_ts_main_file_name.as_str(),
-                self.out_disable_auto_loading_lib,
                 self.out_import_extension.clone(),
             )?;
 
@@ -82,9 +74,6 @@ impl BindingGenerator for NodeBindingGenerator {
                 .out_dir
                 .join(format!("{node_ts_main_file_name}.ts"));
             write_with_dirs(&node_ts_file_path, node_ts_file_contents)?;
-
-            let index_template_path = settings.out_dir.join("index.ts");
-            write_with_dirs(&index_template_path, index_ts_file_contents)?;
         }
 
         Ok(())
