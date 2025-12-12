@@ -8,15 +8,16 @@ bindgen for typescript. It's based on [uniffi-bindgen-node](https://github.com/l
 >
 > Implemented features:
 >
-> Currently missing features:
->
 > - Records
 > - Regular function calling
 > - Async function calling
 > - Enums (both bare enums and enums with associated fields)
-> - Objects (multiple constructors, async + regular method calling)
 > - Traits (including TS -> rust function calls support)
 > - Error enums / exceptions
+>
+> Currently missing features:
+>
+> - Objects (multiple constructors, async + regular method calling)
 > - Any sort of comprehensive test suite
 
 ## Installation (for local development)
@@ -27,7 +28,7 @@ bindgen for typescript. It's based on [uniffi-bindgen-node](https://github.com/l
 
 ## Usage
 
-Run `uniffi-bindgen-ts-interface -- <lib_path>`, passing a dynamic library (`dylib`/`dll`/`so`) build to
+Run `uniffi-bindgen-ts-interface --library <lib_path>`, passing a dynamic library (`dylib`/`dll`/`so`) build to
 export a uniffi interface. See `output/` for the results. For more complicated scenarios, run
 `uniffi-bindgen-ts-interface --help`.
 
